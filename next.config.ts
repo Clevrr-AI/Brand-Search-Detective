@@ -8,6 +8,11 @@ const nextConfig: NextConfig = {
   eslint: {
     ignoreDuringBuilds: true,
   },
+  experimental: {
+    serverActions: {
+      bodyTimeout: 120000, // 120 seconds
+    },
+  },
   images: {
     remotePatterns: [
       {

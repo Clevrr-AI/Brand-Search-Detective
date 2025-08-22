@@ -1,14 +1,16 @@
 
 "use client";
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { cn } from "@/lib/utils";
-import { generateRecommendations } from '@/app/actions';
+import { analyzeBrand, generateRecommendations } from '@/app/actions';
 import { useToast } from '@/hooks/use-toast';
+import type { BrandFormValues } from './brand-form';
 import {
   Card,
   CardContent,
   CardDescription,
+  CardFooter,
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
@@ -17,7 +19,6 @@ import { Button } from "@/components/ui/button";
 import { CheckCircle2, XCircle, BarChart, Target, TrendingUp, Check, Lightbulb, BrainCircuit, MessageSquareQuote, Medal, Search, FileText, Hash, Eye, ListChecks, Repeat, ChevronDown, ChevronUp, Sparkles, Loader2 } from "lucide-react";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "./ui/accordion";
 import ReactMarkdown from 'react-markdown';
-import Link from 'next/link';
 
 
 export interface AnalysisItem {
@@ -34,25 +35,26 @@ export interface AnalysisItem {
   sources: string[];
 }
 
-export interface AnalysisResultData {
-  analysis: AnalysisItem[];
-  domain: string;
-  name: string;
+interface AnalysisResultsDynamicProps {
+  brandInfo: BrandFormValues;
+  queries: string[];
+  docId: string;
+  onReset: (repopulate?: boolean) => void;
 }
 
-const MetricCard = ({ icon: Icon, title, value, colorClass }: { icon: React.ElementType, title: string, value: string | number, colorClass: string }) => (
+const MetricCard = ({ icon: Icon, title, value, colorClass, isLoading }: { icon: React.ElementType, title: string, value: string | number, colorClass: string, isLoading?: boolean }) => (
     <Card className="flex-1 min-w-[200px] bg-card shadow-lg border-l-4" style={{borderColor: `hsl(var(${colorClass}))`}}>
       <CardContent className="p-6 flex items-center gap-4">
           <div className={`w-12 h-12 rounded-full flex items-center justify-center bg-muted`}>
             <Icon className={`h-6 w-6 text-primary`} />
           </div>
           <div>
-            <p className="text-2xl font-bold">{value}</p>
+            {isLoading ? <Loader2 className="h-6 w-6 animate-spin" /> : <p className="text-2xl font-bold">{value}</p>}
             <p className="text-sm text-muted-foreground">{title}</p>
           </div>
       </CardContent>
     </Card>
-);
+  );
 
 const DetailItem = ({ icon: Icon, label, value, valueClass }: { icon: React.ElementType, label: string, value: React.ReactNode, valueClass?: string }) => (
     <div className="flex items-start gap-3 rounded-lg p-3 bg-muted/50">
@@ -198,52 +200,98 @@ const QueryAnalysisDetail = ({ result, domain, onRecommendationsUpdate }: { resu
         )}
       </div>
     );
-};
+  };
   
 
-export function AnalysisResults({ results }: { results: AnalysisResultData }) {
-    const [analysisItems, setAnalysisItems] = useState(results.analysis);
+export function AnalysisResultsDynamic({ brandInfo, queries, docId, onReset }: AnalysisResultsDynamicProps) {
+    const [results, setResults] = useState<AnalysisItem[]>([]);
+    const [loadingStates, setLoadingStates] = useState<Record<string, boolean>>({});
+    const [summary, setSummary] = useState<{
+        ai_visibility: string;
+        average_rank: number;
+        visibility_score: number;
+        totalRecommendations: number;
+    } | null>(null);
 
-    if (!results) {
-        return null;
-    }
-    
+    const { toast } = useToast();
+
+    useEffect(() => {
+        const initialLoadingStates: Record<string, boolean> = {};
+        queries.forEach(q => initialLoadingStates[q] = true);
+        setLoadingStates(initialLoadingStates);
+
+        const analyzeAll = async () => {
+            const analysisPromises = queries.map((query, index) => 
+                analyzeBrand({
+                    doc_id: docId,
+                    query: query,
+                    brandName: brandInfo.brandName,
+                    brandWebsite: brandInfo.brandWebsite,
+                    keywords: [brandInfo.keywords]
+                }).then(res => ({ query, res }))
+            );
+
+            for (const promise of analysisPromises) {
+                const { query, res } = await promise;
+                if (res.error) {
+                    toast({
+                        variant: "destructive",
+                        title: `Analysis Failed for "${query}"`,
+                        description: res.error,
+                    });
+                } else if (res.data) {
+                    setResults(prev => [...prev, res.data]);
+                }
+                setLoadingStates(prev => ({...prev, [query]: false}));
+            }
+        };
+
+        analyzeAll();
+    }, [brandInfo, queries, docId, toast]);
+
+    useEffect(() => {
+        if (results.length > 0 && results.length === queries.length) {
+            const visibleCount = results.filter(r => r.is_visible).length;
+            const valid_ranks = results.map(r => r.rank).filter(r => r > 0);
+            const averageRank = valid_ranks.length > 0 ? valid_ranks.reduce((a, b) => a + b, 0) / valid_ranks.length : 0;
+            const visibilityScore = (visibleCount / queries.length) * 100;
+            const totalRecommendations = results.reduce((acc, item) => acc + (item.recommendations?.length || 0), 0);
+            
+            setSummary({
+                ai_visibility: `${visibleCount}/${queries.length}`,
+                average_rank: averageRank,
+                visibility_score: visibilityScore,
+                totalRecommendations: totalRecommendations,
+            });
+        }
+    }, [results, queries.length]);
+
     const handleRecommendationsUpdate = (query: string, newRecommendations: string[]) => {
-        setAnalysisItems(prevItems => {
-            return prevItems.map(item => {
+        setResults(prevResults => {
+            const newAnalysis = prevResults.map(item => {
                 if (item.query === query) {
                     return { ...item, recommendations: newRecommendations };
                 }
                 return item;
             });
+            return newAnalysis;
         });
     };
     
-    const visibleCount = analysisItems.filter(r => r.is_visible).length;
-    const totalQueries = analysisItems.length;
-    const aiVisibility = `${visibleCount}/${totalQueries}`;
-
-    const valid_ranks = analysisItems.map(r => r.rank).filter(r => r > 0);
-    const averageRank = valid_ranks.length > 0 ? valid_ranks.reduce((a, b) => a + b, 0) / valid_ranks.length : 0;
-    
-    const visibilityScore = totalQueries > 0 ? (visibleCount / totalQueries) * 100 : 0;
-    
-    const totalRecommendations = analysisItems.reduce((acc, item) => acc + (item.recommendations?.length || 0), 0);
-
     return (
         <div className="w-full space-y-12">
             <header className="text-center space-y-2">
                 <h2 className="text-3xl sm:text-4xl font-bold text-foreground">Brand Visibility Analysis</h2>
                 <p className="text-muted-foreground text-xl">
-                    Here's how <span className="font-bold text-primary">{results.name}</span> performs in AI search results
+                    Here's how <span className="font-bold text-primary">{brandInfo.brandName}</span> performs in AI search results
                 </p>
             </header>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-                <MetricCard icon={Target} title="AI Search Visibility" value={aiVisibility} colorClass="--primary" />
-                <MetricCard icon={TrendingUp} title="Average Ranking Position" value={averageRank === 0 ? "N/A" : `#${averageRank.toFixed(0)}`} colorClass="--chart-2" />
-                <MetricCard icon={Check} title="Visibility Score" value={`${visibilityScore.toFixed(0)}%`} colorClass="--chart-4" />
-                <MetricCard icon={Lightbulb} title="Actionable Insights" value={totalRecommendations} colorClass="--chart-5" />
+                <MetricCard icon={Target} title="AI Search Visibility" value={summary?.ai_visibility ?? '...'} colorClass="--primary" isLoading={!summary} />
+                <MetricCard icon={TrendingUp} title="Average Ranking Position" value={summary ? (summary.average_rank === 0 ? "N/A" : `#${summary.average_rank.toFixed(0)}`) : '...'} colorClass="--chart-2" isLoading={!summary} />
+                <MetricCard icon={Check} title="Visibility Score" value={summary ? `${summary.visibility_score.toFixed(0)}%` : '...'} colorClass="--chart-4" isLoading={!summary} />
+                <MetricCard icon={Lightbulb} title="Actionable Insights" value={summary?.totalRecommendations ?? '...'} colorClass="--chart-5" isLoading={!summary} />
             </div>
 
             <Card className="w-full shadow-2xl shadow-primary/5 border-2 border-primary/10">
@@ -253,44 +301,60 @@ export function AnalysisResults({ results }: { results: AnalysisResultData }) {
                         Detailed Query Analysis
                     </CardTitle>
                     <CardDescription className="text-base">
-                        Here's a breakdown of brand visibility for each search query.
+                        Here's a breakdown of brand visibility for each search query. Results will appear as they are analyzed.
                     </CardDescription>
                 </CardHeader>
                 <CardContent>
                     <Accordion type="multiple" className="w-full">
-                    {analysisItems.map((result, index) => (
-                        <AccordionItem value={`item-${index}`} key={index} className="border-b-2 border-primary/10 last:border-b-0">
-                            <AccordionTrigger className="text-lg hover:no-underline py-6">
-                            <div className="flex items-center gap-4 flex-1 text-left">
-                                {result.is_visible ? (
-                                    <CheckCircle2 className="h-6 w-6 text-green-500 flex-shrink-0" />
-                                ) : (
-                                    <XCircle className="h-6 w-6 text-red-500 flex-shrink-0" />
-                                )}
-                                <h3 className="font-semibold text-lg flex-1">
-                                    <span className="font-normal text-muted-foreground">"{result.query}"</span>
-                                </h3>
-                                </div>
-                            </AccordionTrigger>
-                            <AccordionContent className="bg-accent/30 p-6 rounded-b-lg">
-                                <QueryAnalysisDetail 
-                                    result={result} 
-                                    domain={results.domain}
-                                    onRecommendationsUpdate={handleRecommendationsUpdate}
-                                />
-                            </AccordionContent>
-                        </AccordionItem>
-                    ))}
+                    {queries.map((query, index) => {
+                        const result = results.find(r => r.query === query);
+                        const isLoading = loadingStates[query];
+
+                        return (
+                            <AccordionItem value={`item-${index}`} key={index} className="border-b-2 border-primary/10 last:border-b-0">
+                                <AccordionTrigger className="text-lg hover:no-underline py-6">
+                                <div className="flex items-center gap-4 flex-1 text-left">
+                                    {isLoading ? (
+                                        <Loader2 className="h-6 w-6 text-primary animate-spin flex-shrink-0" />
+                                    ) : result?.is_visible ? (
+                                        <CheckCircle2 className="h-6 w-6 text-green-500 flex-shrink-0" />
+                                    ) : (
+                                        <XCircle className="h-6 w-6 text-red-500 flex-shrink-0" />
+                                    )}
+                                    <h3 className="font-semibold text-lg flex-1">
+                                        <span className="font-normal text-muted-foreground">"{query}"</span>
+                                    </h3>
+                                    </div>
+                                </AccordionTrigger>
+                                <AccordionContent className="bg-accent/30 p-6 rounded-b-lg">
+                                    {isLoading ? (
+                                        <div className="flex items-center justify-center p-8">
+                                            <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                                            <p className="ml-4 text-muted-foreground">Analyzing this query...</p>
+                                        </div>
+                                    ) : result ? (
+                                        <QueryAnalysisDetail 
+                                            result={result} 
+                                            domain={brandInfo.brandWebsite}
+                                            onRecommendationsUpdate={handleRecommendationsUpdate}
+                                        />
+                                    ) : (
+                                        <div className="text-center p-8 text-destructive-foreground bg-destructive/80 rounded-lg">
+                                            Analysis for this query failed or returned no data.
+                                        </div>
+                                    )}
+                                </AccordionContent>
+                            </AccordionItem>
+                        );
+                    })}
                     </Accordion>
                 </CardContent>
             </Card>
 
             <div className="text-center">
-                <Button asChild size="lg" variant="outline" className="text-lg font-semibold">
-                    <Link href="/">
-                        <Repeat className="mr-2 h-5 w-5" />
-                        Analyze Another Brand
-                    </Link>
+                <Button onClick={() => onReset(true)} size="lg" variant="outline" className="text-lg font-semibold">
+                    <Repeat className="mr-2 h-5 w-5" />
+                    Analyze Another Brand
                 </Button>
             </div>
 
@@ -300,5 +364,3 @@ export function AnalysisResults({ results }: { results: AnalysisResultData }) {
         </div>
     );
 }
-
-    

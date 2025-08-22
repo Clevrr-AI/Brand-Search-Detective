@@ -34,7 +34,7 @@ export type BrandFormValues = z.infer<typeof brandFormSchema>;
 
 interface BrandFormProps {
   initialData?: BrandFormValues | null;
-  onSubmitSuccess: (values: BrandFormValues & { docId: string }, queries: string[]) => void;
+  onSubmitSuccess: (values: BrandFormValues, queries: string[], doc_id: string) => void;
 }
 
 export function BrandForm({ initialData, onSubmitSuccess }: BrandFormProps) {
@@ -64,16 +64,17 @@ export function BrandForm({ initialData, onSubmitSuccess }: BrandFormProps) {
             title: "Success!",
             description: "We've generated some search queries for you.",
         });
-        onSubmitSuccess(values, result.data.queries);
+        onSubmitSuccess(values, result.data.queries, result.data.doc_id);
       }
     });
   };
 
   return (
-    <Card className='max-w-3xl mx-auto border-2 border-primary/20 shadow-2xl shadow-primary/5'>
+    <Card className='w-full max-w-3xl mx-auto border-2 border-primary/20 shadow-2xl shadow-primary/5'>
       <CardHeader>
-        <CardDescription className="text-center text-lg max-w-2xl mx-auto pt-2 text-muted-foreground">
-          Discover your brand's true visibility in the world of AI-powered search and gain a competitive edge with actionable insights.
+        <CardTitle className="text-center">Tell us about your brand</CardTitle>
+        <CardDescription className="text-center text-lg max-w-2xl mx-auto text-muted-foreground pt-4">
+            Discover your brand's true visibility in the world of AI-powered search and gain a competitive edge with actionable insights.
         </CardDescription>
       </CardHeader>
       <Form {...form}>

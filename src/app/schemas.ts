@@ -1,3 +1,4 @@
+
 import { z } from 'zod';
 
 export const brandFormSchema = z.object({
@@ -7,6 +8,13 @@ export const brandFormSchema = z.object({
 });
 
 export const queriesFormSchema = z.object({
-    email: z.string().email('Please enter a valid email address.'),
     queries: z.array(z.string().min(1, 'Query cannot be empty.')).min(1, 'At least one query is required.'),
+});
+
+export const emailSchema = z.object({
+  email: z.string().email('Please enter a valid email address.'),
+});
+
+export const otpSchema = z.object({
+  otp: z.string().min(6, 'OTP must be 6 digits.').max(6, 'OTP must be 6 digits.'),
 });
