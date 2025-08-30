@@ -2,6 +2,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import React from "react";
 import { doc, getDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { AnalysisResults, type AnalysisResultData } from "@/components/analysis-results";
@@ -10,8 +11,8 @@ import { Button } from "@/components/ui/button";
 import { Loader2, Sparkles } from 'lucide-react';
 import Image from "next/image";
 
-export default function ReportPage({ params }: { params: { docId: string } }) {
-    const { docId } = params;
+export default function ReportPage({ params }: { params: Promise<{ docId: string }> }) {
+    const { docId } = React.use(params);
     const [reportData, setReportData] = useState<AnalysisResultData | null>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
@@ -78,7 +79,7 @@ export default function ReportPage({ params }: { params: { docId: string } }) {
             );
         }
 
-        return <AnalysisResults results={reportData} />;
+        return <AnalysisResults results={reportData} docId={docId} />;
     };
 
     return (

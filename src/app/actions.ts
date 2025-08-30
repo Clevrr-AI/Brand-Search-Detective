@@ -4,7 +4,7 @@
 import { z } from 'zod';
 import * as schemas from './schemas';
 
-const API_URL = "https://f66aa2f33ca1.ngrok-free.app";
+const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
 export async function generateQueries(values: z.infer<typeof schemas.brandFormSchema>): Promise<{ data?: { queries: string[], doc_id: string }; error?: string }> {
   const validatedFields = schemas.brandFormSchema.safeParse(values);
@@ -20,6 +20,7 @@ export async function generateQueries(values: z.infer<typeof schemas.brandFormSc
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
+            'Origin': 'https://getclevrr.com'
         },
         body: JSON.stringify({
             name: brandName,
@@ -51,7 +52,10 @@ export async function sendOtp(email: string): Promise<{ success?: string; error?
   try {
     const response = await fetch(`${API_URL}/send-otp`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        'Origin': 'https://getclevrr.com'
+      },
       body: JSON.stringify({ email }),
     });
     const result = await response.json();
@@ -79,7 +83,10 @@ export async function verifyOtp(
   try {
     const otpResponse = await fetch(`${API_URL}/verify-otp`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        'Origin': 'https://getclevrr.com'
+      },
       body: JSON.stringify({ email, otp, brand: brandName, domain: brandWebsite, keywords, queries, doc_id: docId }),
     });
 
@@ -102,22 +109,27 @@ export async function analyzeBrand(
     brandName: string;
     brandWebsite: string;
     keywords: string[];
+    num_query: number;
+    total_queries: number;
   }
 ): Promise<{ data?: any; error?: string }> {
   try {
-    const { doc_id, query, brandName, brandWebsite, keywords} = data;
+    const { doc_id, query, brandName, brandWebsite, keywords, num_query, total_queries} = data;
     
     const analysisResponse = await fetch(`${API_URL}/get-answer`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
+        'Origin': 'https://getclevrr.com'
       },
       body: JSON.stringify({
         doc_id: doc_id,
         query: query,
         name: brandName,
         domain: brandWebsite,
-        keywords: keywords
+        keywords: keywords,
+        num_query: num_query,
+        total_queries: total_queries
       }),
     });
 
@@ -141,14 +153,15 @@ export async function analyzeBrand(
   }
 }
 
-export async function generateRecommendations(query: string, domain: string): Promise<{ data?: { recommendations: string[] }; error?: string }> {
+export async function generateRecommendations(id: string, index: number): Promise<{ data?: { recommendations: string[] }; error?: string }> {
   try {
     const response = await fetch(`${API_URL}/generate-recommendations`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
+        'Origin': 'https://getclevrr.com'
       },
-      body: JSON.stringify({ query, domain }),
+      body: JSON.stringify({ id, index }),
     });
     
     if (!response.ok) {

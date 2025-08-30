@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState } from 'react';
@@ -64,7 +63,13 @@ const DetailItem = ({ icon: Icon, label, value, valueClass }: { icon: React.Elem
     </div>
   );
 
-const QueryAnalysisDetail = ({ result, domain, onRecommendationsUpdate }: { result: AnalysisItem; domain: string; onRecommendationsUpdate: (query: string, newRecommendations: string[]) => void; }) => {
+const QueryAnalysisDetail = ({ result, domain, docId, index, onRecommendationsUpdate }: { 
+  result: AnalysisItem; 
+  domain: string; 
+  docId: string;
+  index: number;
+  onRecommendationsUpdate: (index: number, newRecommendations: string[]) => void; 
+}) => {
     const [isAnswerExpanded, setIsAnswerExpanded] = useState(false);
     const [isGenerating, setIsGenerating] = useState(false);
     const { toast } = useToast();
@@ -76,7 +81,7 @@ const QueryAnalysisDetail = ({ result, domain, onRecommendationsUpdate }: { resu
   
     const handleGenerateRecs = async () => {
       setIsGenerating(true);
-      const res = await generateRecommendations(result.query, domain);
+      const res = await generateRecommendations(docId, index); // ✅ use docId + index
       setIsGenerating(false);
   
       if (res.error) {
@@ -86,11 +91,12 @@ const QueryAnalysisDetail = ({ result, domain, onRecommendationsUpdate }: { resu
               description: res.error,
           });
       } else if (res.data?.recommendations) {
+        console.log(res);        
           toast({
               title: "Success!",
               description: "New recommendations generated.",
           });
-          onRecommendationsUpdate(result.query, res.data.recommendations);
+          onRecommendationsUpdate(index, res.data.recommendations); // ✅ update by index
       }
     };
   
@@ -201,17 +207,17 @@ const QueryAnalysisDetail = ({ result, domain, onRecommendationsUpdate }: { resu
 };
   
 
-export function AnalysisResults({ results }: { results: AnalysisResultData }) {
+export function AnalysisResults({ results, docId }: { results: AnalysisResultData, docId: string }) {
     const [analysisItems, setAnalysisItems] = useState(results.analysis);
 
     if (!results) {
         return null;
     }
     
-    const handleRecommendationsUpdate = (query: string, newRecommendations: string[]) => {
+    const handleRecommendationsUpdate = (index: number, newRecommendations: string[]) => { // ✅ index instead of query
         setAnalysisItems(prevItems => {
-            return prevItems.map(item => {
-                if (item.query === query) {
+            return prevItems.map((item, i) => {
+                if (i === index) {
                     return { ...item, recommendations: newRecommendations };
                 }
                 return item;
@@ -233,7 +239,7 @@ export function AnalysisResults({ results }: { results: AnalysisResultData }) {
     return (
         <div className="w-full space-y-12">
             <header className="text-center space-y-2">
-                <h2 className="text-3xl sm:text-4xl font-bold text-foreground">Brand Visibility Analysis</h2>
+                <h2 className="text-3xl sm:text-4xl font-bold text-foreground">Brand Visibility Analysis Static</h2>
                 <p className="text-muted-foreground text-xl">
                     Here's how <span className="font-bold text-primary">{results.name}</span> performs in AI search results
                 </p>
@@ -276,6 +282,8 @@ export function AnalysisResults({ results }: { results: AnalysisResultData }) {
                                 <QueryAnalysisDetail 
                                     result={result} 
                                     domain={results.domain}
+                                    docId={docId}
+                                    index={index}
                                     onRecommendationsUpdate={handleRecommendationsUpdate}
                                 />
                             </AccordionContent>
@@ -300,5 +308,3 @@ export function AnalysisResults({ results }: { results: AnalysisResultData }) {
         </div>
     );
 }
-
-    
