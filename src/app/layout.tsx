@@ -1,6 +1,7 @@
 import type {Metadata} from 'next';
 import './globals.css';
 import { Toaster } from "@/components/ui/toaster"
+import { Analytics } from '@vercel/analytics/next';
 import { Poppins } from 'next/font/google'
 
 const poppins = Poppins({
@@ -23,6 +24,7 @@ export default function RootLayout({
       <body className={`${poppins.className} antialiased h-full`}>
         {children}
         <Toaster />
+        <Analytics />
       </body>
     </html>
   );
