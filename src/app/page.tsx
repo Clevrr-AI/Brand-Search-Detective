@@ -80,13 +80,15 @@ export default function Home() {
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
               <div className="flex items-center justify-between h-20">
                   <div className="flex items-center gap-3">
-                      <Image
-                          src="https://getclevrr.com/wp-content/uploads/2025/06/01.1-Transparent-BG-Color_Black.png"
-                          alt="Clevrr AI Logo"
-                          width={80}
-                          height={60}
-                          className="rounded-md"
-                      />
+                      <Link href="https://getclevrr.com?utm-source=header&utm-medium=search-detective&utm-campaign=search-detective" className="flex items-center gap-3">
+                        <Image
+                            src="https://getclevrr.com/wp-content/uploads/2025/06/01.1-Transparent-BG-Color_Black.png"
+                            alt="Clevrr AI Logo"
+                            width={80}
+                            height={60}
+                            className="rounded-md"
+                        />
+                      </Link>
                       <h1 className="text-xl sm:text-2xl font-bold">
                           <span className="text-primary font-light">|</span> Search Detective
                       </h1>

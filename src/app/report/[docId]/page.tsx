@@ -87,7 +87,7 @@ export default function ReportPage({ params }: { params: Promise<{ docId: string
             <nav className="w-full bg-card border-b border-border/50 sticky top-0 z-50">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                     <div className="flex items-center justify-between h-20">
-                        <Link href="/" className="flex items-center gap-3">
+                        <Link href="https://getclevrr.com?utm-source=header&utm-medium=search-detective&utm-campaign=search-detective" className="flex items-center gap-3">
                             <Image
                                 src="https://getclevrr.com/wp-content/uploads/2025/06/01.1-Transparent-BG-Color_Black.png"
                                 alt="Clevrr AI Logo"
@@ -95,6 +95,8 @@ export default function ReportPage({ params }: { params: Promise<{ docId: string
                                 height={60}
                                 className="rounded-md"
                             />
+                        </Link>
+                        <Link href="/" className="flex items-center gap-3">
                             <h1 className="text-xl sm:text-2xl font-bold">
                                 <span className="text-primary font-light">|</span> Search Detective
                             </h1>
