@@ -19,6 +19,7 @@ import { Button } from "@/components/ui/button";
 import { CheckCircle2, XCircle, BarChart, Target, TrendingUp, Check, Lightbulb, BrainCircuit, MessageSquareQuote, Medal, Search, FileText, Hash, Eye, ListChecks, Repeat, ChevronDown, ChevronUp, Sparkles, Loader2 } from "lucide-react";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "./ui/accordion";
 import ReactMarkdown from 'react-markdown';
+import { ShareButton } from './share-button';
 
 
 export interface AnalysisItem {
@@ -284,6 +285,7 @@ export function AnalysisResultsDynamic({ brandInfo, queries, docId, onReset }: A
         });
     };
 
+    const isAnalysisComplete = results.length === queries.length;
 
     return (
         <div className="w-full space-y-12">
@@ -393,7 +395,8 @@ export function AnalysisResultsDynamic({ brandInfo, queries, docId, onReset }: A
                 </CardContent>
             </Card>
 
-            <div className="text-center">
+            <div className="text-center space-y-4">
+                 {isAnalysisComplete && <ShareButton docId={docId} />}
                 <Button onClick={() => onReset(true)} size="lg" variant="outline" className="text-lg font-semibold">
                     <Repeat className="mr-2 h-5 w-5" />
                     Analyze Another Brand

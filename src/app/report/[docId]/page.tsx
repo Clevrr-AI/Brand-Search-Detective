@@ -30,7 +30,8 @@ export default function ReportPage({ params }: { params: Promise<{ docId: string
                 const snapshot = await getDoc(docRef);
 
                 if (snapshot.exists()) {
-                    setReportData(snapshot.data() as AnalysisResultData);
+                setReportData({...(snapshot.data() as Omit<AnalysisResultData, 'docId'>), docId: docId});
+
                 } else {
                     setError("Report not found.");
                     setReportData(null);

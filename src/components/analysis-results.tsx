@@ -17,6 +17,7 @@ import { CheckCircle2, XCircle, BarChart, Target, TrendingUp, Check, Lightbulb, 
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "./ui/accordion";
 import ReactMarkdown from 'react-markdown';
 import Link from 'next/link';
+import { ShareButton } from './share-button';
 
 
 export interface AnalysisItem {
@@ -37,6 +38,7 @@ export interface AnalysisResultData {
   analysis: AnalysisItem[];
   domain: string;
   name: string;
+  docId: string;
 }
 
 const MetricCard = ({ icon: Icon, title, value, colorClass }: { icon: React.ElementType, title: string, value: string | number, colorClass: string }) => (
@@ -210,7 +212,7 @@ const QueryAnalysisDetail = ({ result, domain, docId, index, onRecommendationsUp
 export function AnalysisResults({ results, docId }: { results: AnalysisResultData, docId: string }) {
     const [analysisItems, setAnalysisItems] = useState(results.analysis);
 
-    if (!results) {
+     if (!results || !results.analysis) {
         return null;
     }
     
@@ -293,7 +295,8 @@ export function AnalysisResults({ results, docId }: { results: AnalysisResultDat
                 </CardContent>
             </Card>
 
-            <div className="text-center">
+            <div className="text-center space-y-4">
+                <ShareButton docId={docId} />
                 <Button asChild size="lg" variant="outline" className="text-lg font-semibold">
                     <Link href="/">
                         <Repeat className="mr-2 h-5 w-5" />
