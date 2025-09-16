@@ -241,7 +241,7 @@ export function AnalysisResults({ results, docId }: { results: AnalysisResultDat
     return (
         <div className="w-full space-y-12">
             <header className="text-center space-y-2">
-                <h2 className="text-3xl sm:text-4xl font-bold text-foreground">Brand Visibility Analysis Static</h2>
+                <h2 className="text-3xl sm:text-4xl font-bold text-foreground">Brand Visibility Analysis</h2>
                 <p className="text-muted-foreground text-xl">
                     Here's how <span className="font-bold text-primary">{results.name}</span> performs in AI search results
                 </p>

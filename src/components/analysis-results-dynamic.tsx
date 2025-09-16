@@ -290,7 +290,7 @@ export function AnalysisResultsDynamic({ brandInfo, queries, docId, onReset }: A
     return (
         <div className="w-full space-y-12">
             <header className="text-center space-y-2">
-                <h2 className="text-3xl sm:text-4xl font-bold text-foreground">Brand Visibility Analysis Dynamic</h2>
+                <h2 className="text-3xl sm:text-4xl font-bold text-foreground">Brand Visibility Analysis</h2>
                 <p className="text-muted-foreground text-xl">
                     Here's how <span className="font-bold text-primary">{brandInfo.brandName}</span> performs in AI search results
                 </p>
