@@ -16,7 +16,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import Link from "next/link";
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
-import { Sparkles, Loader2, ExternalLink, Users, FileText, UserX, Crown, TrendingUp, BarChart } from "lucide-react";
+import { Sparkles, Loader2, ExternalLink, Users, FileText, UserX, Crown, TrendingUp, BarChart, Download } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogTrigger } from "@/components/ui/dialog";
 import { Bar, BarChart as RechartsBarChart, ResponsiveContainer, XAxis, YAxis, Tooltip, Legend } from "recharts";
 
@@ -27,6 +27,7 @@ interface VerifiedUser {
     domain: string;
     email: string;
     keywords: string;
+    queries: string[];
     verified_at: Date;
 }
 
@@ -91,6 +92,7 @@ export default function DashboardPage() {
                         domain: data.domain || 'N/A',
                         email: data.email || doc.id,
                         keywords: data.keywords || 'N/A',
+                        queries: data.queries || [],
                         verified_at: verifiedAt,
                     };
                 });
@@ -135,14 +137,60 @@ export default function DashboardPage() {
         setLoadingUserReports(false);
     };
 
+    const handleExportCsv = () => {
+    if (users.length === 0) {
+        alert("No data to export.");
+        return;
+    }
+
+    const headers = ["Email", "Brand", "Domain", "Keywords", "Queries", "Verified At"];
+    const csvRows = [headers.join(",")];
+
+    const escapeCsvCell = (cell: any) => {
+        if (cell === null || cell === undefined) return "";
+        const str = String(cell);
+        if (str.includes(",") || str.includes("\n") || str.includes('"')) {
+            return `"${str.replace(/"/g, '""')}"`;
+        }
+        return str;
+    };
+
+    users.forEach(user => {
+        const row = [
+            escapeCsvCell(user.email || ""),
+            escapeCsvCell(user.brand || ""),
+            escapeCsvCell(user.domain || ""),
+            escapeCsvCell(user.keywords || ""),
+            escapeCsvCell((user as any).queries ? (user as any).queries.join("; ") : ""), // safe fallback
+            escapeCsvCell(user.verified_at instanceof Date ? user.verified_at.toISOString() : "")
+        ];
+        csvRows.push(row.join(","));
+    });
+
+    const csvString = csvRows.join("\n");
+    const blob = new Blob([csvString], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.setAttribute("href", url);
+    link.setAttribute("download", "verified_users.csv");
+    link.style.visibility = "hidden";
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+};
+
     const getBestUser = () => {
         if (reports.length === 0) return "N/A";
-        const reportCounts = reports.reduce((acc, report) => {
+        const validReports = reports.filter(r => r.created_by && r.created_by !== "N/A");
+        if (validReports.length === 0) return "No valid users";
+        const reportCounts = validReports.reduce((acc, report) => {
             acc[report.created_by] = (acc[report.created_by] || 0) + 1;
             return acc;
         }, {} as Record<string, number>);
 
-        const bestUserEmail = Object.keys(reportCounts).reduce((a, b) => reportCounts[a] > reportCounts[b] ? a : b);
+        const bestUserEmail = Object.keys(reportCounts).reduce((a, b) => 
+            reportCounts[a] > reportCounts[b] ? a : b
+        );
         const reportCount = reportCounts[bestUserEmail];
 
         return `${bestUserEmail} (${reportCount} reports)`;
@@ -240,9 +288,15 @@ export default function DashboardPage() {
 
 
                 <Card>
-                    <CardHeader>
-                        <CardTitle>Verified Users</CardTitle>
-                        <CardDescription>A list of all users who have successfully verified their email.</CardDescription>
+                    <CardHeader className="flex flex-row items-center justify-between">
+                        <div>
+                            <CardTitle>Verified Users</CardTitle>
+                            <CardDescription>A list of all users who have successfully verified their email.</CardDescription>
+                        </div>
+                        <Button variant="outline" onClick={handleExportCsv} disabled={loading || users.length === 0}>
+                            <Download className="mr-2 h-4 w-4" />
+                            Export to CSV
+                        </Button>
                     </CardHeader>
                     <CardContent>
                         <Table>
@@ -349,4 +403,3 @@ export default function DashboardPage() {
         </main>
     );
 }
-
